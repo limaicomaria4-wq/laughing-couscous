@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="no">
+    <meta name="mobile-web-app-capable" content="no">
+    <meta name="apple-mobile-web-app-title" content="Mi Gatito">
+    <title>Mi Gatito Accesible - Mascota Virtual</title>
+    <!-- Cargamos Tailwind CSS para el diseño responsivo y de alto contraste -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cargamos Tone.js para generar efectos de sonido y ronroneos sin archivos externos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* Estilos personalizados para asegurar máxima legibilidad, alto contraste y focos visibles */
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #171717;
+            --text-primary: #ffffff;
+            --accent-yellow: #facc15;
+            --accent-cyan: #22d3ee;
+            --accent-green: #4ade80;
+            --accent-pink: #f472b6;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Indicador de enfoque (Focus) muy marcado para navegación por teclado */
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 4px solid var(--accent-yellow);
+            outline-offset: 4px;
+        }
+
+        /* Modo de contraste invertido (Claro) opcional */
+        body.light-high-contrast {
+            --bg-primary: #ffffff;
+            --bg-card: #f3f4f6;
+            --text-primary: #000000;
+        }
+
+        body.light-high-contrast .card-box {
+            background-color: #f3f4f6;
+            border-color: #000000;
+            color: #000000;
+        }
+
+        /* Animación suave para el gatito */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+        .cat-animate {
+            animation: breathe 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 selection:bg-yellow-400 selection:text-black">
+
+    <!-- Región ARIA Live oculta visualmente o visible como historial para lectores de pantalla -->
+    <div id="sr-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+    <!-- Encabezado y Controles de Accesibilidad -->
+    <header class="w-full max-w-3xl flex flex-col sm:flex-row items-center justify-between gap-4 border-b-4 border-yellow-400 pb-4 mb-6">
+        <div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-yellow-400" id="game-title">
+                🐾 Mi Gatito Accesible
+            </h1>
+            <p class="text-lg text-gray-300 mt-1" id="subtitle-text">Cuida, juega y haz crecer a tu compañero.</p>
+        </div>
+
+        <!-- Botones de configuración de accesibilidad -->
+        <div class="flex flex-wrap gap-2" role="region" aria-label="Opciones de accesibilidad">
+            <button id="toggle-voice-btn" type="button" 
+                class="px-4 py-3 rounded-xl font-bold text-base bg-cyan-500 text-black hover:bg-cyan-400 border-2 border-white transition"
+                aria-pressed="true">
+                🔊 Voz: Activada
+            </button>
+            <button id="toggle-theme-btn" type="button" 
+                class="px-4 py-3 rounded-xl font-bold text-base bg-neutral-800 text-white hover:bg-neutral-700 border-2 border-yellow-400 transition">
+                🌓 Contraste
+            </button>
+            <button id="toggle-size-btn" type="button" 
+                class="px-4 py-3 rounded-xl font-bold text-base bg-neutral-800 text-white hover:bg-neutral-700 border-2 border-yellow-400 transition">
+                🔍 Texto +
+            </button>
+            <button id="install-app-btn" type="button" 
+                class="hidden px-4 py-3 rounded-xl font-bold text-base bg-green-500 text-black hover:bg-green-400 border-2 border-white transition">
+                📲 Instalar App
+            </button>
+            <button id="download-file-btn" type="button" 
+                class="px-4 py-3 rounded-xl font-bold text-base bg-yellow-400 text-black hover:bg-yellow-300 border-2 border-white transition">
+                📤 Guardar / Compartir
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="w-full max-w-3xl flex-grow flex flex-col gap-6" id="main-content">
+
+        <!-- Pantalla 1: Configuración Inicial / Nombrar al gatito -->
+        <section id="setup-screen" class="card-box bg-neutral-900 border-4 border-yellow-400 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-yellow-400">¡Adopta a tu gatito bebé!</h2>
+            <p class="text-xl mb-6">
+                Acabas de encontrar un pequeño gatito recién nacido. Este juego cuenta con narración por voz, sonidos descriptivos y atajos de teclado.
+            </p>
+            
+            <form id="adopt-form" class="flex flex-col gap-4">
+                <label for="cat-name-input" class="text-xl font-bold">
+                    ¿Cómo quieres llamar a tu gatito?
+                </label>
+                <input type="text" id="cat-name-input" placeholder="Ej. Pelusa, Michi, Luna..." value="Pelusa" required
+                    class="w-full p-4 text-2xl font-bold rounded-xl bg-black text-white border-4 border-cyan-400 focus:border-yellow-400"
+                    aria-describedby="name-help">
+                <span id="name-help" class="text-base text-gray-300">Escribe un nombre y presiona el botón comenzar.</span>
+                
+                <button type="submit" 
+                    class="mt-4 w-full py-5 px-6 rounded-xl bg-yellow-400 text-black text-2xl font-extrabold hover:bg-yellow-300 border-4 border-white shadow-lg transition transform active:scale-95">
+                    🐱 ¡Adoptar y Comenzar!
+                </button>
+            </form>
+        </section>
+
+        <!-- Pantalla 2: Área de Juego Principal (Oculta al inicio) -->
+        <section id="game-screen" class="hidden flex-col gap-6" aria-label="Área de cuidado del gatito">
+            
+            <!-- Tarjeta de Estado Visual y Descriptivo del Gatito -->
+            <div class="card-box bg-neutral-900 border-4 border-cyan-400 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
+                <!-- Representación SVG de alto contraste que cambia según la etapa -->
+                <div class="w-36 h-36 sm:w-44 sm:h-44 flex-shrink-0 flex items-center justify-center bg-black rounded-2xl border-4 border-yellow-400 p-2 cat-animate" id="cat-visual-container" role="img" aria-label="Ilustración de tu gatito">
+                    <!-- El SVG se actualiza dinámicamente por JS -->
+                </div>
+
+                <div class="flex-grow text-center sm:text-left">
+                    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-2">
+                        <h2 id="display-cat-name" class="text-3xl sm:text-4xl font-extrabold text-yellow-400">Pelusa</h2>
+                        <span id="display-cat-stage" class="px-3 py-1 rounded-lg bg-cyan-400 text-black font-extrabold text-lg uppercase">
+                            Bebé (0 días)
+                        </span>
+                    </div>
+                    
+                    <!-- Mensaje de estado narrativo visible -->
+                    <p id="narrative-log" class="text-xl sm:text-2xl font-semibold text-white bg-black/60 p-4 rounded-xl border-2 border-neutral-700" role="status">
+                        Pelusa acaba de llegar a casa y maúlla suavemente.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Barras de Necesidades (Con etiquetas textuales claras para lectores de pantalla) -->
+            <div class="card-box bg-neutral-900 border-4 border-neutral-700 rounded-2xl p-6" role="region" aria-label="Necesidades del gatito">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-yellow-400">Estado de salud y ánimo</h3>
+                    <button id="read-stats-btn" type="button" 
+                        class="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-yellow-400 font-bold border-2 border-yellow-400 text-base">
+                        📢 Escuchar Estado (Tecla E)
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Saciedad (Comida) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-hunger">🍼 Saciedad (Comida)</label>
+                            <span id="val-hunger" class="text-green-400">80%</span>
+                        </div>
+                        <progress id="bar-hunger" value="80" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Hidratación (Agua) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-thirst">💧 Hidratación (Agua)</label>
+                            <span id="val-thirst" class="text-sky-400">80%</span>
+                        </div>
+                        <progress id="bar-thirst" value="80" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Felicidad (Juego/Cariño) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-happiness">🧶 Felicidad</label>
+                            <span id="val-happiness" class="text-pink-400">80%</span>
+                        </div>
+                        <progress id="bar-happiness" value="80" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Energía (Sueño) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-energy">💤 Energía</label>
+                            <span id="val-energy" class="text-cyan-400">80%</span>
+                        </div>
+                        <progress id="bar-energy" value="80" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Higiene (Limpieza) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-clean">🧼 Higiene</label>
+                            <span id="val-clean" class="text-yellow-400">80%</span>
+                        </div>
+                        <progress id="bar-clean" value="80" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Salud (Veterinario) -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-neutral-700">
+                        <div class="flex justify-between text-xl font-bold mb-2">
+                            <label for="bar-health">❤️ Salud</label>
+                            <span id="val-health" class="text-red-400">100%</span>
+                        </div>
+                        <progress id="bar-health" value="100" max="100" class="w-full h-5 rounded-lg overflow-hidden"></progress>
+                    </div>
+
+                    <!-- Monedas Miau para Cajas Sorpresa -->
+                    <div class="bg-black p-4 rounded-xl border-2 border-yellow-400 flex items-center justify-between">
+                        <span class="text-xl font-bold text-yellow-400">🪙 Monedas Miau:</span>
+                        <span id="val-coins" class="text-2xl font-extrabold text-white">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Acciones Grandes y Accesibles -->
+            <div class="card-box bg-neutral-900 border-4 border-yellow-400 rounded-2xl p-6" role="region" aria-label="Acciones para cuidar a tu gatito">
+                <h3 class="text-2xl font-bold mb-4 text-yellow-400">¿Qué quieres hacer ahora?</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="btn-feed" type="button" data-key="1"
+                        class="p-5 rounded-xl bg-green-500 hover:bg-green-400 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🍼</span> Alimentar (Tecla 1)
+                    </button>
+
+                    <button id="btn-water" type="button" data-key="w"
+                        class="p-5 rounded-xl bg-sky-400 hover:bg-sky-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>💧</span> Dar Agua (Tecla W)
+                    </button>
+
+                    <button id="btn-walk" type="button" data-key="p"
+                        class="p-5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🌿</span> Salir a Pasear (Tecla P)
+                    </button>
+
+                    <button id="btn-call" type="button" data-key="c"
+                        class="p-5 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>📣</span> Llamar a tu Gatito (Tecla C)
+                    </button>
+
+                    <button id="btn-urgent" type="button" data-key="u"
+                        class="p-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>⚡</span> Qué Necesita Ahora (Tecla U)
+                    </button>
+
+                    <button id="btn-play" type="button" data-key="2"
+                        class="p-5 rounded-xl bg-pink-500 hover:bg-pink-400 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🧶</span> Jugar (Tecla 2)
+                    </button>
+
+                    <button id="btn-pet" type="button" data-key="3"
+                        class="p-5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>✋</span> Acariciar (Tecla 3)
+                    </button>
+
+                    <button id="btn-clean" type="button" data-key="4"
+                        class="p-5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🧼</span> Limpiar (Tecla 4)
+                    </button>
+
+                    <button id="btn-sleep" type="button" data-key="5"
+                        class="p-5 rounded-xl bg-purple-400 hover:bg-purple-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>💤</span> Dormir / Descansar (Tecla 5)
+                    </button>
+
+                    <button id="btn-listen" type="button" data-key="6"
+                        class="p-5 rounded-xl bg-orange-400 hover:bg-orange-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🔊</span> Escuchar Gatito (Tecla 6)
+                    </button>
+
+                    <button id="btn-minigame" type="button" data-key="7"
+                        class="p-5 rounded-xl bg-indigo-400 hover:bg-indigo-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🎧</span> Minijuego: ¿Dónde está? (Tecla 7)
+                    </button>
+
+                    <button id="btn-rhythm-game" type="button" data-key="m"
+                        class="p-5 rounded-xl bg-teal-400 hover:bg-teal-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🎵</span> Minijuego: Eco de Maullidos (Tecla M)
+                    </button>
+
+                    <button id="btn-party" type="button" data-key="8"
+                        class="p-5 rounded-xl bg-rose-400 hover:bg-rose-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🎂</span> Fiesta de Cumpleaños (Tecla 8)
+                    </button>
+
+                    <button id="btn-vet" type="button" data-key="9"
+                        class="p-5 rounded-xl bg-red-400 hover:bg-red-300 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🩺</span> Curar / Veterinario (Tecla 9)
+                    </button>
+
+                    <button id="btn-gift" type="button" data-key="0"
+                        class="p-5 rounded-xl bg-amber-300 hover:bg-amber-200 text-black font-extrabold text-xl sm:text-2xl border-4 border-white flex items-center justify-center gap-3 transition transform active:scale-95">
+                        <span>🎁</span> Caja Sorpresa - 2 Monedas (Tecla 0)
+                    </button>
+                </div>
+
+                <!-- Panel Accesible para Guardar y Compartir (Sin errores de página no disponible) -->
+                <div id="share-panel" class="hidden mt-6 p-6 rounded-2xl bg-black border-4 border-yellow-400" role="region" aria-label="Opciones para guardar o compartir el juego">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-2xl font-extrabold text-yellow-400">📤 Descargar o Enviar Archivo</h4>
+                        <button id="btn-close-share" type="button" class="px-3 py-1 rounded-lg bg-neutral-800 text-white font-bold border-2 border-white">✖️ Cerrar</button>
+                    </div>
+                    <p class="text-lg text-gray-200 mb-4">
+                        Para tener tu juego como app y pasarlo por WhatsApp:
+                    </p>
+                    <div class="grid grid-cols-1 gap-4">
+                        <button id="btn-native-share" type="button"
+                            class="p-4 rounded-xl bg-green-400 hover:bg-green-300 text-black font-extrabold text-lg border-4 border-white">
+                            📲 Intentar enviar archivo por WhatsApp
+                        </button>
+                        <div class="p-4 rounded-xl bg-neutral-900 border-2 border-cyan-400 text-base text-gray-200">
+                            <strong class="text-cyan-400 block mb-1">💡 Si la vista previa de Gemini bloquea el envío:</strong>
+                            1. Toca el botón de <strong>Compartir / Descargar</strong> de la barra superior de Gemini (fuera del juego).<br>
+                            2. También puedes subir ese archivo <code>.html</code> gratis en <strong>tiiny.host</strong> para tener un enlace instalable en cualquier celular.
+                        </div>
+                    </div>
+                    <p id="share-feedback" class="mt-3 text-base font-bold text-green-400" role="status"></p>
+                </div>
+
+                <!-- Panel Interactivo del Minijuego Auditivo (Oculto hasta iniciarlo) -->
+                <div id="minigame-panel" class="hidden mt-6 p-6 rounded-2xl bg-black border-4 border-indigo-400" role="region" aria-label="Minijuego auditivo de escondite">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
+                        <h4 class="text-2xl font-extrabold text-indigo-300">🎧 ¿De qué lado viene el maullido?</h4>
+                        <button id="btn-repeat-sound" type="button"
+                            class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-black font-bold border-2 border-white">
+                            🔁 Repetir Maullido (Tecla R)
+                        </button>
+                    </div>
+                    <p class="text-lg text-gray-200 mb-4">Escucha con atención (o usa las flechas Izquierda, Abajo o Derecha de tu teclado):</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <button id="guess-left" type="button"
+                            class="p-5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold text-xl border-4 border-white">
+                            ⬅️ Izquierda
+                        </button>
+                        <button id="guess-center" type="button"
+                            class="p-5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-xl border-4 border-white">
+                            ⬇️ Centro
+                        </button>
+                        <button id="guess-right" type="button"
+                            class="p-5 rounded-xl bg-green-400 hover:bg-green-300 text-black font-extrabold text-xl border-4 border-white">
+                            ➡️ Derecha
+                        </button>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button id="btn-close-minigame" type="button"
+                            class="px-4 py-2 rounded-xl bg-neutral-800 text-white font-bold border-2 border-neutral-500">
+                            ✖️ Salir del minijuego
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel Interactivo del Nuevo Minijuego: Eco de Maullidos -->
+                <div id="rhythm-panel" class="hidden mt-6 p-6 rounded-2xl bg-black border-4 border-teal-400" role="region" aria-label="Minijuego auditivo Eco de Maullidos">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
+                        <h4 class="text-2xl font-extrabold text-teal-300">🎵 Eco de Maullidos: ¿Cuántos escuchaste?</h4>
+                        <button id="btn-repeat-sequence" type="button"
+                            class="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-black font-bold border-2 border-white">
+                            🔁 Escuchar Secuencia (Tecla R)
+                        </button>
+                    </div>
+                    <p id="rhythm-instruction" class="text-lg text-gray-200 mb-4">Cuenta cuántos maullidos o notas da tu gatito y elige el número correcto:</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <button id="rhythm-guess-2" type="button"
+                            class="p-5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-extrabold text-2xl border-4 border-white">
+                            2
+                        </button>
+                        <button id="rhythm-guess-3" type="button"
+                            class="p-5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-2xl border-4 border-white">
+                            3
+                        </button>
+                        <button id="rhythm-guess-4" type="button"
+                            class="p-5 rounded-xl bg-green-400 hover:bg-green-300 text-black font-extrabold text-2xl border-4 border-white">
+                            4
+                        </button>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button id="btn-close-rhythm" type="button"
+                            class="px-4 py-2 rounded-xl bg-neutral-800 text-white font-bold border-2 border-neutral-500">
+                            ✖️ Salir del juego de eco
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón discreto para reiniciar partida si se desea -->
+                <div class="mt-6 pt-4 border-t-2 border-neutral-800 flex justify-end">
+                    <button id="btn-reset" type="button"
+                        class="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-red-900 text-gray-300 hover:text-white text-base font-bold border-2 border-neutral-600 transition">
+                        🔄 Adoptar otro gatito (Reiniciar)
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Pie de página con instrucciones rápidas de teclado -->
+    <footer class="w-full max-w-3xl mt-8 pt-4 border-t-2 border-neutral-800 text-center text-gray-300 text-base">
+        <p><strong>Versión 2.0</strong> — <strong>Atajos:</strong> 1: Comer | W: Agua | P: Pasear | C: Llamar | U: Urgente | 2: Jugar | 3: Acariciar | 4: Limpiar | 5: Dormir | 6: Escuchar | 7: Escondite | M: Eco | 8: Fiesta | 9: Curar | 0: Regalo | E: Estado</p>
+    </footer>
+
+    <script>
+        /**
+         * ESTADO DEL JUEGO Y CONFIGURACIÓN DE ACCESIBILIDAD
+         */
+        const gameState = {
+            version: "2.0",
+            name: "Pelusa",
+            ageDays: 0,
+            carePoints: 0, // Puntos acumulados para crecer de etapa
+            stage: "Bebé", // Bebé -> Cachorro -> Joven -> Adulto
+            hunger: 80,    // 100 = lleno, 0 = hambriento
+            thirst: 80,    // 100 = hidratado, 0 = sediento
+            happiness: 80, // 100 = muy feliz, 0 = triste
+            energy: 80,    // 100 = descansado, 0 = agotado
+            clean: 80,     // 100 = impecable, 0 = sucio
+            health: 100,   // 100 = sano, <50 = enfermo
+            coins: 3,      // Monedas Miau para abrir cajas sorpresa
+            isSleeping: false,
+            voiceEnabled: true,
+            screenReaderFriendly: true, // Evita que la voz interna estorbe cuando usas lector de pantalla
+            largeText: false,
+            started: false
+        };
+
+        let gameLoopInterval = null;
+        let synth = null;
+        let nativeAudioCtx = null;
+        let deferredInstallPrompt = null;
+        let minigameActive = false;
+        let rhythmGameActive = false;
+        let targetMeowCount = 2;
+        let hiddenDirection = 'center'; // 'left', 'center', 'right'
+        let isPartyTime = false;
+
+        /**
+         * FRASES EXPRESIVAS DEL GATITO SEGÚN SU NECESIDAD O ÁNIMO
+         */
+        function getCatSpeechLine(contextType = 'auto') {
+            const n = gameState.name;
+            if (contextType === 'hungry' || (!gameState.isSleeping && gameState.hunger <= 30)) {
+                const lines = [
+                    `${n} dice: "¡Miau! Tengo la pancita vacía, ¿me das comida?"`,
+                    `${n} te dice suavecito: "Miau, miau... ¡tengo hambre!"`
+                ];
+                return lines[Math.floor(Math.random() * lines.length)];
+            }
+            if (contextType === 'thirsty' || (!gameState.isSleeping && gameState.thirst <= 30)) {
+                const lines = [
+                    `${n} dice: "¡Miau! Tengo sed, ¿me pones agüita fresca?"`,
+                    `${n} maúlla junto a su plato: "¡Miau! ¡Agua, por favor!"`
+                ];
+                return lines[Math.floor(Math.random() * lines.length)];
+            }
+            if (contextType === 'sleepy' || (!gameState.isSleeping && gameState.energy <= 25)) {
+                const lines = [
+                    `${n} bosteza y dice: "¡Miaaau... ya me dio mucho sueño!"`,
+                    `${n} dice bajito: "Miau... quiero dormir un ratito."`
+                ];
+                return lines[Math.floor(Math.random() * lines.length)];
+            }
+            if (contextType === 'sick' || gameState.health <= 50) {
+                return `${n} dice con voz débil: "¡Miau... no me siento muy bien hoy!"`;
+            }
+            if (contextType === 'water_done') {
+                return `${n} toma agua y dice: "¡Miau, qué rica y fresca estaba el agua!"`;
+            }
+            if (contextType === 'walk_done') {
+                return `${n} regresa feliz del paseo y dice: "¡Miau! ¡Qué bonito fue salir a pasear contigo!"`;
+            }
+            if (contextType === 'happy' || gameState.happiness >= 75) {
+                const lines = [
+                    `${n} ronronea y dice: "¡Miau, miau! ¡Te quiero mucho!"`,
+                    `${n} dice contento: "¡Miau! ¡Qué buen compañero eres!"`
+                ];
+                return lines[Math.floor(Math.random() * lines.length)];
+            }
+            return `${n} te mira y dice: "¡Miau! ¿Qué hacemos ahora?"`;
+        }
+
+        /**
+         * INICIALIZACIÓN DEL MOTOR DE AUDIO (TONE.JS + AUDIO CONTEXT NATIVO DE RESPALDO)
+         */
+        async function initAudio() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    if (!nativeAudioCtx) {
+                        nativeAudioCtx = new AudioCtx();
+                    }
+                    if (nativeAudioCtx.state === 'suspended') {
+                        await nativeAudioCtx.resume();
+                    }
+                }
+            } catch (e) {
+                console.warn("AudioContext nativo no disponible:", e);
+            }
+
+            try {
+                if (window.Tone) {
+                    if (Tone.context.state !== 'running') {
+                        await Tone.start();
+                    }
+                    if (!synth) {
+                        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                        synth.volume.value = -5;
+                    }
+                }
+            } catch (e) {
+                console.warn("Tone.js no disponible aún:", e);
+            }
+        }
+
+        function playFallbackTone(freqStart, freqEnd, durationSec, panValue = 0, type = 'triangle') {
+            try {
+                if (!nativeAudioCtx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) nativeAudioCtx = new AudioCtx();
+                }
+                if (!nativeAudioCtx) return;
+                if (nativeAudioCtx.state === 'suspended') {
+                    nativeAudioCtx.resume().catch(() => {});
+                }
+                const now = nativeAudioCtx.currentTime;
+                const osc = nativeAudioCtx.createOscillator();
+                const gain = nativeAudioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freqStart, now);
+                if (freqEnd && freqEnd !== freqStart) {
+                    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + durationSec);
+                }
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.24, now + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+                if (nativeAudioCtx.createStereoPanner) {
+                    const panner = nativeAudioCtx.createStereoPanner();
+                    panner.pan.setValueAtTime(panValue, now);
+                    osc.connect(gain);
+                    gain.connect(panner);
+                    panner.connect(nativeAudioCtx.destination);
+                } else {
+                    osc.connect(gain);
+                    gain.connect(nativeAudioCtx.destination);
+                }
+
+                osc.start(now);
+                osc.stop(now + durationSec + 0.03);
+            } catch (e) {
+                console.warn("Error en respaldo de audio:", e);
+            }
+        }
+
+        /**
+         * CONFIGURACIÓN DE APLICACIÓN INSTALABLE (PWA) Y GUARDADO LOCAL
+         */
+        function setupPWA() {
+            try {
+                // Crear ícono SVG codificado para la app instalada
+                const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#0a0a0a"/><polygon points="20,42 28,14 45,32" fill="#facc15"/><polygon points="80,42 72,14 55,32" fill="#facc15"/><circle cx="50" cy="56" r="32" fill="#171717" stroke="#facc15" stroke-width="5"/><circle cx="38" cy="52" r="6" fill="#22d3ee"/><circle cx="62" cy="52" r="6" fill="#22d3ee"/><polygon points="46,60 54,60 50,65" fill="#f472b6"/></svg>`;
+                const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+
+                // Añadir ícono para Apple / navegadores
+                const appleIcon = document.createElement('link');
+                appleIcon.rel = 'apple-touch-icon';
+                appleIcon.href = iconUrl;
+                document.head.appendChild(appleIcon);
+
+                // Escuchar el evento nativo de instalación del navegador si está disponible
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    deferredInstallPrompt = e;
+                    const installBtn = document.getElementById('install-app-btn');
+                    if (installBtn) installBtn.classList.remove('hidden');
+                });
+            } catch (e) {
+                console.warn("PWA no disponible en vista previa:", e);
+            }
+        }
+
+        function saveGame() {
+            try {
+                localStorage.setItem('miGatitoAccesibleSave', JSON.stringify(gameState));
+            } catch (e) {
+                console.warn("No se pudo guardar partida:", e);
+            }
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem('miGatitoAccesibleSave');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(gameState, parsed);
+                    if (gameState.started) {
+                        document.getElementById('setup-screen').classList.add('hidden');
+                        const gameScreen = document.getElementById('game-screen');
+                        gameScreen.classList.remove('hidden');
+                        gameScreen.classList.add('flex');
+                        updateUI();
+                        startGameLoop();
+                    }
+                }
+            } catch (e) {
+                console.warn("No se pudo cargar partida guardada:", e);
+            }
+        }
+
+        /**
+         * GENERADOR DE EFECTOS DE SONIDO REALISTAS
+         */
+        function playSoundEffect(type, panValue = 0) {
+            // Siempre intentamos despertar el audio si estaba pausado
+            if (nativeAudioCtx && nativeAudioCtx.state === 'suspended') {
+                nativeAudioCtx.resume().catch(() => {});
+            }
+
+            const pitchMap = {
+                'Bebé': { start: 680, peak: 920, end: 540 },
+                'Cachorro': { start: 560, peak: 780, end: 440 },
+                'Joven': { start: 460, peak: 640, end: 360 },
+                'Adulto': { start: 380, peak: 520, end: 290 }
+            };
+            const p = pitchMap[gameState.stage] || pitchMap['Bebé'];
+
+            // Respaldo garantizado con AudioContext nativo
+            if (type === 'meow' || type === 'meow_happy') {
+                playFallbackTone(p.start, p.peak, 0.15, panValue, 'triangle');
+                setTimeout(() => playFallbackTone(p.peak, p.end, 0.28, panValue, 'triangle'), 140);
+            } else if (type === 'purr') {
+                for (let i = 0; i < 6; i++) {
+                    setTimeout(() => playFallbackTone(55, 48, 0.22, panValue, 'sawtooth'), i * 240);
+                }
+            } else if (type === 'eat') {
+                playFallbackTone(330, 440, 0.12, 0, 'sine');
+                setTimeout(() => playFallbackTone(523, 659, 0.15, 0, 'sine'), 140);
+            } else if (type === 'play' || type === 'gift') {
+                playFallbackTone(587, 880, 0.12, 0, 'triangle');
+                setTimeout(() => playFallbackTone(784, 1046, 0.18, 0, 'triangle'), 130);
+            } else if (type === 'clean' || type === 'heal') {
+                playFallbackTone(440, 587, 0.16, 0, 'sine');
+                setTimeout(() => playFallbackTone(659, 880, 0.2, 0, 'sine'), 160);
+            } else if (type === 'water') {
+                // Sonido de gotitas y sorbos de agua bien audible
+                playFallbackTone(480, 720, 0.14, -0.2, 'sine');
+                setTimeout(() => playFallbackTone(620, 880, 0.16, 0.2, 'sine'), 150);
+                setTimeout(() => playFallbackTone(540, 760, 0.18, 0, 'triangle'), 310);
+            } else if (type === 'call') {
+                // Llamado amistoso + respuesta curiosa del gatito
+                playFallbackTone(523, 659, 0.14, 0, 'sine');
+                setTimeout(() => {
+                    playFallbackTone(p.start, p.peak, 0.16, panValue, 'triangle');
+                    setTimeout(() => playFallbackTone(p.peak, p.end, 0.28, panValue, 'triangle'), 150);
+                }, 260);
+            } else if (type === 'walk') {
+                playFallbackTone(392, 523, 0.14, -0.4, 'triangle');
+                setTimeout(() => playFallbackTone(523, 659, 0.16, 0.4, 'triangle'), 160);
+            } else if (type === 'sleep') {
+                playFallbackTone(392, 261, 0.45, 0, 'sine');
+            } else if (type === 'grow' || type === 'birthday') {
+                const melody = [262, 262, 294, 262, 349, 330];
+                melody.forEach((freq, idx) => {
+                    setTimeout(() => playFallbackTone(freq, freq, 0.25, 0, 'triangle'), idx * 240);
+                });
+            }
+
+            try {
+                if (!window.Tone || !synth) return;
+                const now = Tone.now();
+
+                if (type === 'meow' || type === 'meow_happy') {
+                    // Síntesis orgánica de "Mi-a-u" con panoramización estéreo (-1 izquierda, 0 centro, 1 derecha)
+                    const panner = new Tone.Panner(panValue).toDestination();
+                    const filter = new Tone.Filter(1200, "lowpass").connect(panner);
+                    const meowOsc = new Tone.Synth({
+                        oscillator: { type: "triangle" },
+                        envelope: { attack: 0.08, decay: 0.2, sustain: 0.4, release: 0.25 }
+                    }).connect(filter);
+                    meowOsc.volume.value = -3;
+
+                    meowOsc.triggerAttack(p.start, now);
+                    meowOsc.frequency.exponentialRampToValueAtTime(p.peak, now + 0.14); // "Mi-AA"
+                    meowOsc.frequency.exponentialRampToValueAtTime(p.end, now + 0.42);  // "-uu"
+                    meowOsc.triggerRelease(now + 0.45);
+
+                    setTimeout(() => { meowOsc.dispose(); filter.dispose(); panner.dispose(); }, 1000);
+                } 
+                else if (type === 'birthday') {
+                    // Melodía festiva de Cumpleaños Feliz + maullido de celebración
+                    const notes = [
+                        { note: "C4", time: 0, dur: "0.2" },
+                        { note: "C4", time: 0.25, dur: "0.2" },
+                        { note: "D4", time: 0.5, dur: "0.4" },
+                        { note: "C4", time: 0.95, dur: "0.4" },
+                        { note: "F4", time: 1.4, dur: "0.4" },
+                        { note: "E4", time: 1.85, dur: "0.7" },
+                        { note: "C4", time: 2.7, dur: "0.2" },
+                        { note: "C4", time: 2.95, dur: "0.2" },
+                        { note: "D4", time: 3.2, dur: "0.4" },
+                        { note: "C4", time: 3.65, dur: "0.4" },
+                        { note: "G4", time: 4.1, dur: "0.4" },
+                        { note: "F4", time: 4.55, dur: "0.8" }
+                    ];
+                    notes.forEach(n => {
+                        synth.triggerAttackRelease(n.note, n.dur, now + n.time);
+                    });
+                    setTimeout(() => playSoundEffect('meow'), 5400);
+                }
+                else if (type === 'purr') {
+                    // Ronroneo realista: vibración grave modulada (26 Hz como el ronroneo real de un gato)
+                    const purrFilter = new Tone.Filter(180, "lowpass").toDestination();
+                    const purrOsc = new Tone.Oscillator(27, "sawtooth").connect(purrFilter);
+                    const tremolo = new Tone.Tremolo(24, 0.85).toDestination().start();
+                    purrOsc.connect(tremolo);
+                    purrOsc.volume.value = -2;
+
+                    purrOsc.start(now);
+                    purrOsc.stop(now + 1.6);
+
+                    setTimeout(() => { purrOsc.dispose(); tremolo.dispose(); purrFilter.dispose(); }, 1800);
+                } 
+                else if (type === 'eat') {
+                    synth.triggerAttackRelease("E4", "0.08", now);
+                    synth.triggerAttackRelease("G4", "0.08", now + 0.12);
+                    synth.triggerAttackRelease("C5", "0.12", now + 0.24);
+                } 
+                else if (type === 'play') {
+                    // Cascabel juguetón + maullido corto
+                    synth.triggerAttackRelease("C6", "0.06", now);
+                    synth.triggerAttackRelease("G6", "0.06", now + 0.08);
+                    synth.triggerAttackRelease("E6", "0.08", now + 0.16);
+                    setTimeout(() => playSoundEffect('meow'), 250);
+                } 
+                else if (type === 'clean') {
+                    synth.triggerAttackRelease("B5", "0.08", now);
+                    synth.triggerAttackRelease("D6", "0.15", now + 0.1);
+                } 
+                else if (type === 'water') {
+                    synth.triggerAttackRelease("C5", "0.1", now);
+                    synth.triggerAttackRelease("E5", "0.1", now + 0.11);
+                    synth.triggerAttackRelease("G5", "0.18", now + 0.22);
+                }
+                else if (type === 'walk') {
+                    synth.triggerAttackRelease("G4", "0.12", now);
+                    synth.triggerAttackRelease("C5", "0.12", now + 0.14);
+                    synth.triggerAttackRelease("E5", "0.18", now + 0.28);
+                    setTimeout(() => playSoundEffect('meow'), 450);
+                }
+                else if (type === 'sleep') {
+                    synth.triggerAttackRelease("G4", "0.3", now);
+                    synth.triggerAttackRelease("E4", "0.3", now + 0.3);
+                    synth.triggerAttackRelease("C4", "0.5", now + 0.6);
+                } 
+                else if (type === 'grow') {
+                    synth.triggerAttackRelease(["C4", "E4", "G4"], "0.2", now);
+                    synth.triggerAttackRelease(["D4", "F4", "A4"], "0.2", now + 0.25);
+                    synth.triggerAttackRelease(["E4", "G4", "B4", "C5"], "0.5", now + 0.5);
+                    setTimeout(() => playSoundEffect('meow'), 800);
+                }
+                else if (type === 'heal') {
+                    // Latido suave + melodía curativa
+                    synth.triggerAttackRelease("F4", "0.15", now);
+                    synth.triggerAttackRelease("A4", "0.15", now + 0.2);
+                    synth.triggerAttackRelease("C5", "0.3", now + 0.4);
+                    setTimeout(() => playSoundEffect('purr'), 600);
+                }
+                else if (type === 'gift') {
+                    // Redoble de sorpresa + cascabel
+                    synth.triggerAttackRelease("G4", "0.1", now);
+                    synth.triggerAttackRelease("B4", "0.1", now + 0.12);
+                    synth.triggerAttackRelease("D5", "0.1", now + 0.24);
+                    synth.triggerAttackRelease("G5", "0.35", now + 0.36);
+                    setTimeout(() => playSoundEffect('meow'), 650);
+                }
+            } catch (e) {
+                console.warn("Audio Tone.js no disponible aún:", e);
+            }
+        }
+
+        /**
+         * PRIMER MINIJUEGO AUDITIVO: ¿DÓNDE ESTÁ EL MAULLIDO? (ESCONDITE ESTÉREO)
+         */
+        function getPanForDirection(dir) {
+            if (dir === 'left') return -0.85;
+            if (dir === 'right') return 0.85;
+            return 0;
+        }
+
+        function playHiddenMeow() {
+            const pan = getPanForDirection(hiddenDirection);
+            playSoundEffect('meow', pan);
+        }
+
+        async function startMinigame() {
+            await initAudio();
+            if (gameState.isSleeping) {
+                gameState.isSleeping = false;
+            }
+            if (gameState.energy < 15) {
+                playSoundEffect('meow');
+                speak(`${gameState.name} está demasiado cansado para jugar a las escondidas. ${getCatSpeechLine('sleepy')}`);
+                return;
+            }
+
+            rhythmGameActive = false;
+            document.getElementById('rhythm-panel').classList.add('hidden');
+
+            minigameActive = true;
+            const dirs = ['left', 'center', 'right'];
+            hiddenDirection = dirs[Math.floor(Math.random() * dirs.length)];
+
+            document.getElementById('minigame-panel').classList.remove('hidden');
+            updateUI();
+
+            speak(`Minijuego ¿Dónde está? iniciado. Escucha de qué lado maúlla ${gameState.name}: izquierda, centro o derecha.`);
+            setTimeout(() => {
+                playHiddenMeow();
+                document.getElementById('guess-left').focus();
+            }, 1400);
+        }
+
+        function checkMinigameGuess(chosenDir) {
+            if (!minigameActive) return;
+
+            const labels = { left: 'la izquierda', center: 'el centro', right: 'la derecha' };
+            if (chosenDir === hiddenDirection) {
+                minigameActive = false;
+                document.getElementById('minigame-panel').classList.add('hidden');
+                gameState.happiness += 25;
+                gameState.energy -= 10;
+                gameState.carePoints += 2;
+                gameState.coins += 2;
+                playSoundEffect('purr');
+                speak(`¡Lo encontraste! ${gameState.name} estaba en ${labels[hiddenDirection]}. ¡Ganaste 2 Monedas Miau! ${getCatSpeechLine('happy')}`);
+                checkGrowth();
+                updateUI();
+                document.getElementById('btn-minigame').focus();
+            } else {
+                playHiddenMeow();
+                speak(`Ahí no estaba, era ${labels[chosenDir]}. Escucha de nuevo el maullido para ubicarlo.`);
+            }
+        }
+
+        /**
+         * SEGUNDO MINIJUEGO AUDITIVO: ECO DE MAULLIDOS
+         */
+        function playMeowSequence() {
+            for (let i = 0; i < targetMeowCount; i++) {
+                const pan = i === 0 ? -0.75 : (i === targetMeowCount - 1 ? 0.75 : 0);
+                setTimeout(() => {
+                    playSoundEffect('meow', pan);
+                }, i * 700);
+            }
+        }
+
+        async function startRhythmMinigame() {
+            await initAudio();
+            if (gameState.isSleeping) {
+                gameState.isSleeping = false;
+            }
+            if (gameState.energy < 15) {
+                playSoundEffect('meow');
+                speak(`${gameState.name} está demasiado cansado para jugar al eco. ${getCatSpeechLine('sleepy')}`);
+                return;
+            }
+
+            minigameActive = false;
+            document.getElementById('minigame-panel').classList.add('hidden');
+
+            rhythmGameActive = true;
+            const counts = [2, 3, 4];
+            targetMeowCount = counts[Math.floor(Math.random() * counts.length)];
+
+            document.getElementById('rhythm-panel').classList.remove('hidden');
+            updateUI();
+
+            speak(`Juego Eco de Maullidos iniciado. Cuenta cuántos maullidos da ${gameState.name} y elige 2, 3 o 4.`);
+            setTimeout(() => {
+                playMeowSequence();
+                document.getElementById('rhythm-guess-2').focus();
+            }, 1400);
+        }
+
+        /**
+         * SISTEMA DE NARRACIÓN ACCESIBLE (ARIA LIVE + LOG VISUAL + VOZ OPCIONAL)
+         */
+        function speak(text, interrupt = true) {
+            if (!text) return;
+
+            // 1. Actualizar el historial narrativo visible en pantalla
+            const logEl = document.getElementById('narrative-log');
+            if (logEl) {
+                logEl.textContent = text;
+            }
+
+            // 2. Actualizar la región ARIA Live para TalkBack / NVDA / VoiceOver
+            const srEl = document.getElementById('sr-announcer');
+            if (srEl) {
+                srEl.textContent = '';
+                setTimeout(() => {
+                    srEl.textContent = text;
+                }, 40);
+            }
+
+            // 3. Usar Web Speech API solo si la voz integrada está activada y no estorba al lector de pantalla
+            if (gameState.voiceEnabled && !gameState.screenReaderFriendly && 'speechSynthesis' in window) {
+                if (interrupt) {
+                    window.speechSynthesis.cancel();
+                }
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.05;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /**
+         * GRÁFICOS SVG DE ALTO CONTRASTE SEGÚN LA ETAPA DE CRECIMIENTO
+         */
+        function getCatSVG(stage, isSleeping) {
+            const partyHatSVG = isPartyTime 
+                ? `<polygon points="36,26 50,2 64,26" fill="#f43f5e" stroke="#facc15" stroke-width="2"/>
+                   <circle cx="50" cy="2" r="4" fill="#facc15"/>`
+                : '';
+
+            const eyeSVG = isSleeping 
+                ? `<path d="M 32 52 Q 38 58 44 52" stroke="#facc15" stroke-width="4" fill="none" stroke-linecap="round"/>
+                   <path d="M 56 52 Q 62 58 68 52" stroke="#facc15" stroke-width="4" fill="none" stroke-linecap="round"/>`
+                : `<circle cx="38" cy="50" r="6" fill="#facc15"/>
+                   <circle cx="62" cy="50" r="6" fill="#facc15"/>`;
+
+            if (stage === "Bebé") {
+                return `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Orejas pequeñas -->
+                    <polygon points="22,40 30,18 44,34" fill="#22d3ee"/>
+                    <polygon points="78,40 70,18 56,34" fill="#22d3ee"/>
+                    ${partyHatSVG}
+                    <!-- Cabeza redonda de bebé -->
+                    <circle cx="50" cy="54" r="30" fill="#171717" stroke="#22d3ee" stroke-width="4"/>
+                    ${eyeSVG}
+                    <!-- Nariz rosada -->
+                    <polygon points="47,58 53,58 50,62" fill="#f472b6"/>
+                    <!-- Biberón decorativo -->
+                    <text x="50" y="92" font-size="14" fill="#facc15" text-anchor="middle" font-weight="bold">BEBÉ</text>
+                </svg>`;
+            } else if (stage === "Cachorro") {
+                return `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Orejas más grandes -->
+                    <polygon points="18,42 26,12 45,32" fill="#4ade80"/>
+                    <polygon points="82,42 74,12 55,32" fill="#4ade80"/>
+                    ${partyHatSVG}
+                    <!-- Cabeza -->
+                    <circle cx="50" cy="54" r="32" fill="#171717" stroke="#4ade80" stroke-width="4"/>
+                    ${eyeSVG}
+                    <!-- Nariz y bigotes -->
+                    <polygon points="46,58 54,58 50,63" fill="#f472b6"/>
+                    <line x1="15" y1="58" x2="32" y2="60" stroke="#ffffff" stroke-width="2"/>
+                    <line x1="85" y1="58" x2="68" y2="60" stroke="#ffffff" stroke-width="2"/>
+                    <text x="50" y="95" font-size="13" fill="#4ade80" text-anchor="middle" font-weight="bold">CACHORRO</text>
+                </svg>`;
+            } else if (stage === "Joven") {
+                return `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <polygon points="16,44 24,8 46,30" fill="#f472b6"/>
+                    <polygon points="84,44 76,8 54,30" fill="#f472b6"/>
+                    ${partyHatSVG}
+                    <circle cx="50" cy="54" r="34" fill="#171717" stroke="#f472b6" stroke-width="4"/>
+                    ${eyeSVG}
+                    <polygon points="46,58 54,58 50,63" fill="#facc15"/>
+                    <line x1="12" y1="56" x2="32" y2="59" stroke="#ffffff" stroke-width="2.5"/>
+                    <line x1="12" y1="64" x2="32" y2="64" stroke="#ffffff" stroke-width="2.5"/>
+                    <line x1="88" y1="56" x2="68" y2="59" stroke="#ffffff" stroke-width="2.5"/>
+                    <line x1="88" y1="64" x2="68" y2="64" stroke="#ffffff" stroke-width="2.5"/>
+                    <text x="50" y="96" font-size="13" fill="#f472b6" text-anchor="middle" font-weight="bold">JOVEN</text>
+                </svg>`;
+            } else {
+                // Adulto majestuoso con corona o gorro de fiesta
+                return `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <polygon points="15,45 22,8 45,30" fill="#facc15"/>
+                    <polygon points="85,45 78,8 55,30" fill="#facc15"/>
+                    ${isPartyTime ? partyHatSVG : '<polygon points="38,24 44,12 50,20 56,12 62,24" fill="#facc15"/>'}
+                    <circle cx="50" cy="55" r="34" fill="#171717" stroke="#facc15" stroke-width="5"/>
+                    ${eyeSVG}
+                    <polygon points="45,59 55,59 50,64" fill="#f472b6"/>
+                    <line x1="10" y1="56" x2="32" y2="59" stroke="#ffffff" stroke-width="3"/>
+                    <line x1="10" y1="65" x2="32" y2="65" stroke="#ffffff" stroke-width="3"/>
+                    <line x1="90" y1="56" x2="68" y2="59" stroke="#ffffff" stroke-width="3"/>
+                    <line x1="90" y1="65" x2="68" y2="65" stroke="#ffffff" stroke-width="3"/>
+                    <text x="50" y="97" font-size="13" fill="#facc15" text-anchor="middle" font-weight="bold">ADULTO</text>
+                </svg>`;
+            }
+        }
+
+        /**
+         * ACTUALIZACIÓN DE INTERFAZ Y CRECIMIENTO
+         */
+        function updateUI() {
+            // Limitar valores entre 0 y 100
+            gameState.hunger = Math.max(0, Math.min(100, Math.round(gameState.hunger)));
+            gameState.thirst = Math.max(0, Math.min(100, Math.round(gameState.thirst)));
+            gameState.happiness = Math.max(0, Math.min(100, Math.round(gameState.happiness)));
+            gameState.energy = Math.max(0, Math.min(100, Math.round(gameState.energy)));
+            gameState.clean = Math.max(0, Math.min(100, Math.round(gameState.clean)));
+            gameState.health = Math.max(0, Math.min(100, Math.round(gameState.health)));
+
+            // Actualizar barras y porcentajes
+            document.getElementById('bar-hunger').value = gameState.hunger;
+            document.getElementById('val-hunger').textContent = `${gameState.hunger}%`;
+
+            document.getElementById('bar-thirst').value = gameState.thirst;
+            document.getElementById('val-thirst').textContent = `${gameState.thirst}%`;
+
+            document.getElementById('bar-happiness').value = gameState.happiness;
+            document.getElementById('val-happiness').textContent = `${gameState.happiness}%`;
+
+            document.getElementById('bar-energy').value = gameState.energy;
+            document.getElementById('val-energy').textContent = `${gameState.energy}%`;
+
+            document.getElementById('bar-clean').value = gameState.clean;
+            document.getElementById('val-clean').textContent = `${gameState.clean}%`;
+
+            document.getElementById('bar-health').value = gameState.health;
+            document.getElementById('val-health').textContent = `${gameState.health}%`;
+
+            document.getElementById('val-coins').textContent = gameState.coins;
+
+            // Actualizar nombre y etapa
+            document.getElementById('display-cat-name').textContent = gameState.name;
+            document.getElementById('display-cat-stage').textContent = `${gameState.stage} (${gameState.ageDays} días)`;
+
+            // Actualizar SVG y descripción accesible
+            const visualContainer = document.getElementById('cat-visual-container');
+            visualContainer.innerHTML = getCatSVG(gameState.stage, gameState.isSleeping);
+            visualContainer.setAttribute('aria-label', `${gameState.name}, gato en etapa ${gameState.stage}, ${gameState.isSleeping ? 'durmiendo plácidamente' : 'despierto y atento'}`);
+
+            // Actualizar texto del botón dormir
+            const sleepBtn = document.getElementById('btn-sleep');
+            sleepBtn.innerHTML = gameState.isSleeping 
+                ? `<span>☀️</span> Despertar a ${gameState.name} (Tecla 5)`
+                : `<span>💤</span> Dormir / Descansar (Tecla 5)`;
+
+            saveGame();
+        }
+
+        function checkGrowth() {
+            let newStage = gameState.stage;
+            if (gameState.carePoints >= 18 && gameState.stage === "Joven") {
+                newStage = "Adulto";
+            } else if (gameState.carePoints >= 10 && gameState.stage === "Cachorro") {
+                newStage = "Joven";
+            } else if (gameState.carePoints >= 4 && gameState.stage === "Bebé") {
+                newStage = "Cachorro";
+            }
+
+            if (newStage !== gameState.stage) {
+                gameState.stage = newStage;
+                triggerBirthdayParty(`¡Fiesta de cumpleaños! Gracias a tus cuidados, ${gameState.name} ha crecido y ahora es un gato ${newStage}. ¡Feliz cumpleaños, ${gameState.name}!`);
+            }
+        }
+
+        function triggerBirthdayParty(customMessage) {
+            isPartyTime = true;
+            gameState.happiness = 100;
+            updateUI();
+            playSoundEffect('birthday');
+            const msg = customMessage || `¡Es hora de festejar! Le pusiste un gorrito de fiesta a ${gameState.name} y suena su música de cumpleaños. ¡Feliz cumpleaños, ${gameState.name}!`;
+            speak(msg, false);
+            setTimeout(() => {
+                isPartyTime = false;
+                updateUI();
+            }, 8000);
+        }
+
+        /**
+         * SEGUNDO MINIJUEGO AUDITIVO: ECO DE MAULLIDOS
+         */
+        function playMeowSequence() {
+            for (let i = 0; i < targetMeowCount; i++) {
+                const pan = i === 0 ? -0.5 : (i === targetMeowCount - 1 ? 0.5 : 0);
+                setTimeout(() => {
+                    playSoundEffect('meow', pan);
+                }, i * 650);
+            }
+        }
+
+        async function startRhythmMinigame() {
+            await initAudio();
+            if (gameState.isSleeping) {
+                gameState.isSleeping = false;
+            }
+            if (gameState.energy < 15) {
+                playSoundEffect('meow');
+                speak(`${gameState.name} está demasiado cansado para jugar al eco. ${getCatSpeechLine('sleepy')}`);
+                return;
+            }
+
+            minigameActive = false;
+            document.getElementById('minigame-panel').classList.add('hidden');
+
+            rhythmGameActive = true;
+            const counts = [2, 3, 4];
+            targetMeowCount = counts[Math.floor(Math.random() * counts.length)];
+
+            document.getElementById('rhythm-panel').classList.remove('hidden');
+            updateUI();
+
+            speak(`Juego Eco de Maullidos iniciado. Pon atención y cuenta cuántos maullidos da ${gameState.name}. Luego elige 2, 3 o 4.`);
+            setTimeout(() => {
+                playMeowSequence();
+                document.getElementById('rhythm-guess-2').focus();
+            }, 2200);
+        }
+
+        function checkRhythmGuess(chosenCount) {
+            if (!rhythmGameActive) return;
+
+            if (chosenCount === targetMeowCount) {
+                rhythmGameActive = false;
+                document.getElementById('rhythm-panel').classList.add('hidden');
+                gameState.happiness += 25;
+                gameState.energy -= 10;
+                gameState.carePoints += 2;
+                gameState.coins += 2;
+                playSoundEffect('purr');
+                speak(`¡Excelente oído! ${gameState.name} dio exactamente ${targetMeowCount} maullidos. ¡Ganaste 2 Monedas Miau! ${getCatSpeechLine('happy')}`);
+                checkGrowth();
+                updateUI();
+                document.getElementById('btn-rhythm-game').focus();
+            } else {
+                playMeowSequence();
+                speak(`Casi, no eran ${chosenCount}. Escucha de nuevo con calma cuántos maullidos se escuchan.`);
+            }
+        }
+
+        /**
+         * ACCIONES DEL JUGADOR
+         */
+        async function handleAction(action) {
+            await initAudio();
+
+            if (action === 'sleep') {
+                gameState.isSleeping = !gameState.isSleeping;
+                if (gameState.isSleeping) {
+                    playSoundEffect('sleep');
+                    speak(`${gameState.name} se ha acurrucado y se quedó dormido. Recuperará energía poco a poco.`);
+                } else {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} se ha despertado, se estira y te saluda con un maullido.`);
+                }
+                updateUI();
+                return;
+            }
+
+            // Si está dormido y el usuario hace otra acción, lo despierta suavemente
+            if (gameState.isSleeping) {
+                gameState.isSleeping = false;
+            }
+
+            if (action === 'feed') {
+                if (gameState.hunger >= 95) {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} ya tiene la pancita llena y no quiere comer más por ahora.`);
+                    return;
+                }
+                const foodType = gameState.stage === "Bebé" ? "su biberón de leche tibia" : "su plato de comida deliciosa";
+                gameState.hunger += 25;
+                gameState.energy += 5;
+                gameState.clean -= 5;
+                gameState.carePoints += 1;
+                gameState.coins += 1;
+                playSoundEffect('eat');
+                speak(`Le diste ${foodType} a ${gameState.name}. ¡Ñam, ñam! Su saciedad subió al ${Math.min(100, gameState.hunger)} por ciento y ganaste una moneda.`);
+            } 
+            else if (action === 'water') {
+                if (gameState.thirst >= 95) {
+                    playSoundEffect('water');
+                    speak(`${gameState.name} ya tomó suficiente agua y está bien hidratado.`);
+                    return;
+                }
+                gameState.thirst += 30;
+                gameState.happiness += 5;
+                gameState.carePoints += 1;
+                playSoundEffect('water');
+                speak(`Le serviste agua fresca a ${gameState.name}. Su hidratación subió al ${Math.min(100, gameState.thirst)} por ciento. ${getCatSpeechLine('water_done')}`);
+            }
+            else if (action === 'call') {
+                const panOptions = [-0.6, 0, 0.6];
+                const pan = panOptions[Math.floor(Math.random() * panOptions.length)];
+                gameState.happiness += 10;
+                playSoundEffect('call', pan);
+                speak(`Llamaste a ${gameState.name} con cariño. Corre hacia ti y te responde: ${getCatSpeechLine('auto')}`);
+            }
+            else if (action === 'urgent') {
+                const urgentList = [];
+                if (gameState.health <= 50) urgentList.push("necesita ir al veterinario");
+                if (gameState.thirst <= 35) urgentList.push("tiene sed");
+                if (gameState.hunger <= 35) urgentList.push("tiene hambre");
+                if (gameState.energy <= 30) urgentList.push("tiene sueño");
+                if (gameState.clean <= 35) urgentList.push("necesita limpieza");
+                if (gameState.happiness <= 35) urgentList.push("quiere jugar o que lo acaricies");
+
+                if (urgentList.length === 0) {
+                    playSoundEffect('purr');
+                    speak(`Resumen rápido: ${gameState.name} está bien atendido por ahora. ${getCatSpeechLine('happy')}`);
+                } else {
+                    playSoundEffect('meow');
+                    speak(`Resumen rápido de ${gameState.name}: ${urgentList.join(", ")}.`);
+                }
+                return;
+            }
+            else if (action === 'walk') {
+                if (gameState.energy < 20) {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} está muy cansado para salir a pasear. ${getCatSpeechLine('sleepy')}`);
+                    return;
+                }
+                if (gameState.thirst <= 15) {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} tiene mucha sed antes de salir. Dale agua primero con la tecla W. ${getCatSpeechLine('thirsty')}`);
+                    return;
+                }
+                gameState.happiness += 30;
+                gameState.energy -= 20;
+                gameState.hunger -= 10;
+                gameState.thirst -= 15;
+                gameState.clean -= 10;
+                gameState.carePoints += 2;
+                gameState.coins += 1;
+                playSoundEffect('walk');
+                speak(`Saliste a pasear al aire libre con ${gameState.name}. Exploraron juntos, su felicidad subió al ${Math.min(100, gameState.happiness)} por ciento y ganaste 1 moneda. ${getCatSpeechLine('walk_done')}`);
+            }
+            else if (action === 'play') {
+                if (gameState.energy < 20) {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} está muy cansado para jugar. Necesita dormir un poco.`);
+                    return;
+                }
+                const toy = gameState.stage === "Bebé" ? "un cascabel suave" : "una bola de estambre";
+                gameState.happiness += 25;
+                gameState.energy -= 15;
+                gameState.hunger -= 10;
+                gameState.carePoints += 1;
+                gameState.coins += 1;
+                playSoundEffect('play');
+                speak(`Jugaste con ${toy} junto a ${gameState.name}. ¡Salta de alegría! Felicidad al ${Math.min(100, gameState.happiness)} por ciento.`);
+            } 
+            else if (action === 'pet') {
+                gameState.happiness += 15;
+                gameState.carePoints += 1;
+                playSoundEffect('purr');
+                speak(`Acaricias suavemente el lomo de ${gameState.name}. Empieza a ronronear muy contento.`);
+            } 
+            else if (action === 'clean') {
+                if (gameState.clean >= 95) {
+                    playSoundEffect('meow');
+                    speak(`${gameState.name} ya está completamente limpio y su pelaje brilla.`);
+                    return;
+                }
+                gameState.clean = 100;
+                gameState.happiness += 5;
+                gameState.carePoints += 1;
+                playSoundEffect('clean');
+                speak(`Cepillaste y limpiaste con cuidado a ${gameState.name}. ¡Ahora huele muy bien y está impecable!`);
+            }
+            else if (action === 'vet') {
+                if (gameState.health >= 95) {
+                    playSoundEffect('purr');
+                    speak(`${gameState.name} está completamente sano y fuerte. El veterinario dice que lo estás cuidando excelente.`);
+                    return;
+                }
+                gameState.health = 100;
+                gameState.happiness += 10;
+                gameState.carePoints += 1;
+                playSoundEffect('heal');
+                speak(`Llevaste a ${gameState.name} al veterinario. Le dieron una vitamina dulce y su salud volvió al cien por ciento.`);
+            }
+            else if (action === 'gift') {
+                if (gameState.coins < 2) {
+                    playSoundEffect('meow');
+                    speak(`Necesitas 2 Monedas Miau para abrir una caja sorpresa. Actualmente tienes ${gameState.coins}. Alimenta o juega con ${gameState.name} para ganar más monedas.`);
+                    return;
+                }
+                gameState.coins -= 2;
+                const surprises = [
+                    "un ratón de juguete que chilla divertido",
+                    "una caja de cartón gigante donde se metió de un salto",
+                    "un collar con un cascabel dorado muy melodioso",
+                    "un cojín súper esponjoso con olor a hierba gatera",
+                    "una caña con plumas de colores"
+                ];
+                const chosen = surprises[Math.floor(Math.random() * surprises.length)];
+                gameState.happiness = 100;
+                gameState.carePoints += 2;
+                playSoundEffect('gift');
+                speak(`¡Abriste una caja sorpresa! Dentro había ${chosen}. A ${gameState.name} le encantó y su felicidad subió al máximo.`);
+            }
+            else if (action === 'listen') {
+                if (gameState.isSleeping) {
+                    playSoundEffect('purr');
+                    speak(`${gameState.name} está durmiendo profundamente y ronronea bajito.`);
+                } else if (gameState.health <= 50) {
+                    playSoundEffect('meow');
+                    speak(`${getCatSpeechLine('sick')} Presiona la tecla 9 para llevarlo al veterinario.`);
+                } else if (gameState.thirst <= 30) {
+                    playSoundEffect('meow');
+                    speak(`${getCatSpeechLine('thirsty')} Presiona W para darle agua.`);
+                } else if (gameState.hunger <= 30) {
+                    playSoundEffect('meow');
+                    speak(`${getCatSpeechLine('hungry')} Presiona 1 para darle comida.`);
+                } else if (gameState.happiness >= 75) {
+                    playSoundEffect('purr');
+                    setTimeout(() => playSoundEffect('meow'), 700);
+                    speak(getCatSpeechLine('happy'));
+                } else {
+                    playSoundEffect('meow');
+                    speak(getCatSpeechLine('auto'));
+                }
+                return;
+            }
+
+            checkGrowth();
+            updateUI();
+        }
+
+        function announceFullStatus() {
+            const sleepText = gameState.isSleeping ? "Actualmente está durmiendo." : "Está despierto.";
+            const statusText = `Estado de ${gameState.name}, versión 2.0, etapa ${gameState.stage}, edad ${gameState.ageDays} días. ${sleepText} ` +
+                `Salud al ${gameState.health} por ciento. ` +
+                `Saciedad al ${gameState.hunger} por ciento. ` +
+                `Hidratación al ${gameState.thirst} por ciento. ` +
+                `Felicidad al ${gameState.happiness} por ciento. ` +
+                `Energía al ${gameState.energy} por ciento. ` +
+                `Higiene al ${gameState.clean} por ciento. ` +
+                `Tienes ${gameState.coins} Monedas Miau. ${getCatSpeechLine('auto')}`;
+            speak(statusText);
+        }
+
+        /**
+         * BUCLE DE TIEMPO DEL JUEGO (Cada 12 segundos avanza el tiempo suavemente)
+         */
+        function startGameLoop() {
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            
+            gameLoopInterval = setInterval(() => {
+                if (!gameState.started) return;
+
+                gameState.ageDays += 1;
+
+                if (gameState.isSleeping) {
+                    gameState.energy += 18;
+                    gameState.hunger -= 4;
+                    gameState.thirst -= 4;
+                    if (gameState.energy >= 100) {
+                        gameState.energy = 100;
+                        gameState.isSleeping = false;
+                        playSoundEffect('meow');
+                        speak(`${gameState.name} ya descansó por completo y se ha despertado lleno de energía. ${getCatSpeechLine('happy')}`);
+                    }
+                } else {
+                    gameState.hunger -= 6;
+                    gameState.thirst -= 7;
+                    gameState.happiness -= 5;
+                    gameState.energy -= 5;
+                    gameState.clean -= 4;
+
+                    // Si tiene mucha hambre, sed o suciedad, baja un poco la salud
+                    if (gameState.hunger <= 15 || gameState.thirst <= 15 || gameState.clean <= 15) {
+                        gameState.health -= 8;
+                    } else if (gameState.health < 100) {
+                        gameState.health += 2;
+                    }
+
+                    // Alertas auditivas si alguna necesidad baja mucho
+                    if (gameState.health <= 50) {
+                        playSoundEffect('meow');
+                        speak(`Atención: ${getCatSpeechLine('sick')} Presiona la tecla 9 para llevarlo al veterinario.`, false);
+                    } else if (gameState.thirst <= 25) {
+                        playSoundEffect('meow');
+                        speak(`Atención: ${getCatSpeechLine('thirsty')}`, false);
+                    } else if (gameState.hunger <= 25) {
+                        playSoundEffect('meow');
+                        speak(`Atención: ${getCatSpeechLine('hungry')}`, false);
+                    } else if (gameState.energy <= 20) {
+                        speak(`Atención: ${getCatSpeechLine('sleepy')}`, false);
+                    } else if (gameState.clean <= 25) {
+                        speak(`Atención: ${gameState.name} necesita un poco de limpieza.`, false);
+                    }
+                }
+
+                updateUI();
+            }, 12000); // 12 segundos por ciclo para dar tiempo cómodo de lectura y navegación
+        }
+
+        // Formulario inicial para adoptar y comenzar el juego
+        document.getElementById('adopt-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await initAudio();
+            const inputName = document.getElementById('cat-name-input').value.trim();
+            gameState.name = inputName || "Pelusa";
+            gameState.started = true;
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex');
+
+            updateUI();
+            playSoundEffect('meow');
+            speak(`¡Felicidades! Has adoptado a ${gameState.name}, un gatito bebé. Usa los botones en pantalla o las teclas del 1 al 0 para cuidarlo.`);
+            startGameLoop();
+            document.getElementById('btn-feed').focus();
+        });
+
+        // Botón para abrir opciones accesibles de Guardar o Compartir
+        document.getElementById('download-file-btn').addEventListener('click', () => {
+            const sharePanel = document.getElementById('share-panel');
+            if (!gameState.started) {
+                // Si está en la pantalla inicial, mostramos el juego o intentamos compartir directo
+                shareOrDownloadFile(true);
+                return;
+            }
+            sharePanel.classList.remove('hidden');
+            speak("Abriste las opciones para compartir o instalar el juego. Presiona Intentar enviar archivo por WhatsApp o sigue las instrucciones en pantalla.");
+            document.getElementById('btn-native-share').focus();
+        });
+
+        function getCleanHTMLFileContent() {
+            // Clonar el documento y ocultar paneles abiertos para que el archivo descargado empiece limpio
+            const clone = document.documentElement.cloneNode(true);
+            const shareP = clone.querySelector('#share-panel');
+            if (shareP) shareP.classList.add('hidden');
+            const miniP = clone.querySelector('#minigame-panel');
+            if (miniP) miniP.classList.add('hidden');
+            return "<!DOCTYPE html>\n" + clone.outerHTML;
+        }
+
+        async function shareOrDownloadFile(preferShare = true) {
+            const htmlContent = getCleanHTMLFileContent();
+            const fb = document.getElementById('share-feedback');
+
+            // Intentar enviar como ARCHIVO ADJUNTO real por WhatsApp / apps del celular
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const file = new File([htmlContent], "Mi_Gatito_Accesible.html", { type: "text/html" });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'Mi Gatito Accesible',
+                            text: '¡Te comparto el juego Mi Gatito Accesible! Ábrelo en tu navegador para jugar.',
+                            files: [file]
+                        });
+                        const msg = "¡Archivo enviado con éxito!";
+                        if (fb) fb.textContent = msg;
+                        speak(msg);
+                        return;
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        speak("Se canceló el envío.");
+                        return;
+                    }
+                    console.warn("No se pudo adjuntar el archivo directamente:", e);
+                }
+            }
+
+            const errMsg = "La vista previa interna de Gemini no permite guardar archivos directo en tu teléfono. Usa el botón de descarga o compartir de la barra superior de Gemini, o ábrelo en Google Chrome.";
+            if (fb) fb.textContent = errMsg;
+            speak(errMsg);
+        }
+
+        document.getElementById('btn-native-share').addEventListener('click', () => shareOrDownloadFile(true));
+
+        document.getElementById('btn-close-share').addEventListener('click', () => {
+            document.getElementById('share-panel').classList.add('hidden');
+            speak("Panel de compartir cerrado.");
+        });
+
+        // Botón para reiniciar y adoptar otro gatito
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            localStorage.removeItem('miGatitoAccesibleSave');
+            gameState.started = false;
+            gameState.ageDays = 0;
+            gameState.carePoints = 0;
+            gameState.stage = "Bebé";
+            gameState.hunger = 80;
+            gameState.thirst = 80;
+            gameState.happiness = 80;
+            gameState.energy = 80;
+            gameState.clean = 80;
+            gameState.health = 100;
+            gameState.coins = 3;
+            gameState.isSleeping = false;
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('flex');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('cat-name-input').focus();
+            speak("Partida reiniciada. Escribe el nombre de tu nuevo gatito bebé.");
+        });
+
+        // Botones de acción
+        document.getElementById('btn-feed').addEventListener('click', () => handleAction('feed'));
+        document.getElementById('btn-water').addEventListener('click', () => handleAction('water'));
+        document.getElementById('btn-call').addEventListener('click', () => handleAction('call'));
+        document.getElementById('btn-urgent').addEventListener('click', () => handleAction('urgent'));
+        document.getElementById('btn-walk').addEventListener('click', () => handleAction('walk'));
+        document.getElementById('btn-play').addEventListener('click', () => handleAction('play'));
+        document.getElementById('btn-pet').addEventListener('click', () => handleAction('pet'));
+        document.getElementById('btn-clean').addEventListener('click', () => handleAction('clean'));
+        document.getElementById('btn-sleep').addEventListener('click', () => handleAction('sleep'));
+        document.getElementById('btn-listen').addEventListener('click', () => handleAction('listen'));
+        document.getElementById('btn-minigame').addEventListener('click', startMinigame);
+        document.getElementById('btn-party').addEventListener('click', () => {
+            initAudio().then(() => {
+                if (gameState.isSleeping) gameState.isSleeping = false;
+                triggerBirthdayParty();
+            });
+        });
+        document.getElementById('btn-vet').addEventListener('click', () => handleAction('vet'));
+        document.getElementById('btn-gift').addEventListener('click', () => handleAction('gift'));
+        document.getElementById('read-stats-btn').addEventListener('click', announceFullStatus);
+
+        // Toggle de contraste claro/oscuro
+        document.getElementById('toggle-theme-btn').addEventListener('click', () => {
+            document.body.classList.toggle('light-high-contrast');
+            const isLight = document.body.classList.contains('light-high-contrast');
+            speak(isLight ? "Modo claro de alto contraste activado." : "Modo oscuro de alto contraste activado.");
+        });
+
+        // Toggle de voz integrada (alterna entre modo lector de pantalla / voz interna / desactivada)
+        document.getElementById('toggle-voice-btn').addEventListener('click', (e) => {
+            if (gameState.screenReaderFriendly) {
+                gameState.screenReaderFriendly = false;
+                gameState.voiceEnabled = true;
+                e.target.textContent = "🔊 Voz Interna: Activada";
+                e.target.setAttribute('aria-pressed', 'true');
+                speak("Modo de voz interna activado.");
+            } else if (gameState.voiceEnabled) {
+                gameState.voiceEnabled = false;
+                e.target.textContent = "🔇 Voz: Desactivada";
+                e.target.setAttribute('aria-pressed', 'false');
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+            } else {
+                gameState.screenReaderFriendly = true;
+                gameState.voiceEnabled = true;
+                e.target.textContent = "♿ Modo Lector: Activo";
+                e.target.setAttribute('aria-pressed', 'true');
+                speak("Modo compatible con lector de pantalla activado.");
+            }
+        });
+
+        // Eventos del Minijuego Auditivo
+        document.getElementById('btn-repeat-sound').addEventListener('click', playHiddenMeow);
+        document.getElementById('guess-left').addEventListener('click', () => checkMinigameGuess('left'));
+        document.getElementById('guess-center').addEventListener('click', () => checkMinigameGuess('center'));
+        document.getElementById('guess-right').addEventListener('click', () => checkMinigameGuess('right'));
+        document.getElementById('btn-close-minigame').addEventListener('click', () => {
+            minigameActive = false;
+            document.getElementById('minigame-panel').classList.add('hidden');
+            speak("Saliste del minijuego.");
+            document.getElementById('btn-minigame').focus();
+        });
+
+        // Eventos del Segundo Minijuego: Eco de Maullidos
+        document.getElementById('btn-rhythm-game').addEventListener('click', startRhythmMinigame);
+        document.getElementById('btn-repeat-sequence').addEventListener('click', playMeowSequence);
+        document.getElementById('rhythm-guess-2').addEventListener('click', () => checkRhythmGuess(2));
+        document.getElementById('rhythm-guess-3').addEventListener('click', () => checkRhythmGuess(3));
+        document.getElementById('rhythm-guess-4').addEventListener('click', () => checkRhythmGuess(4));
+        document.getElementById('btn-close-rhythm').addEventListener('click', () => {
+            rhythmGameActive = false;
+            document.getElementById('rhythm-panel').classList.add('hidden');
+            speak("Saliste del juego Eco de Maullidos.");
+            document.getElementById('btn-rhythm-game').focus();
+        });
+
+        document.getElementById('toggle-size-btn').addEventListener('click', (e) => {
+            gameState.largeText = !gameState.largeText;
+            document.documentElement.style.fontSize = gameState.largeText ? '120%' : '100%';
+            e.target.textContent = gameState.largeText ? "🔍 Texto Normal" : "🔍 Texto +";
+            speak(gameState.largeText ? "Tamaño de texto aumentado." : "Tamaño de texto normal.");
+        });
+
+        // Atajos de teclado globales durante el juego
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.started) return;
+            // Evitar disparar atajos si el usuario está escribiendo en algún input
+            if (document.activeElement.tagName === 'INPUT') return;
+
+            if (minigameActive) {
+                if (e.key === 'ArrowLeft') { e.preventDefault(); checkMinigameGuess('left'); return; }
+                if (e.key === 'ArrowDown') { e.preventDefault(); checkMinigameGuess('center'); return; }
+                if (e.key === 'ArrowRight') { e.preventDefault(); checkMinigameGuess('right'); return; }
+                if (e.key.toLowerCase() === 'r') { e.preventDefault(); playHiddenMeow(); return; }
+                if (e.key === 'Escape') {
+                    minigameActive = false;
+                    document.getElementById('minigame-panel').classList.add('hidden');
+                    speak("Saliste del minijuego.");
+                    return;
+                }
+            }
+
+            if (rhythmGameActive) {
+                if (e.key === '2') { e.preventDefault(); checkRhythmGuess(2); return; }
+                if (e.key === '3') { e.preventDefault(); checkRhythmGuess(3); return; }
+                if (e.key === '4') { e.preventDefault(); checkRhythmGuess(4); return; }
+                if (e.key.toLowerCase() === 'r') { e.preventDefault(); playMeowSequence(); return; }
+                if (e.key === 'Escape') {
+                    rhythmGameActive = false;
+                    document.getElementById('rhythm-panel').classList.add('hidden');
+                    speak("Saliste del juego Eco de Maullidos.");
+                    return;
+                }
+            }
+
+            switch(e.key.toLowerCase()) {
+                case '1': handleAction('feed'); break;
+                case 'w': handleAction('water'); break;
+                case 'c': handleAction('call'); break;
+                case 'u': handleAction('urgent'); break;
+                case 'p': handleAction('walk'); break;
+                case '2': handleAction('play'); break;
+                case '3': handleAction('pet'); break;
+                case '4': handleAction('clean'); break;
+                case '5': handleAction('sleep'); break;
+                case '6': handleAction('listen'); break;
+                case '7': startMinigame(); break;
+                case 'm': startRhythmMinigame(); break;
+                case '8': 
+                    initAudio().then(() => {
+                        if (gameState.isSleeping) gameState.isSleeping = false;
+                        triggerBirthdayParty();
+                    });
+                    break;
+                case '9': handleAction('vet'); break;
+                case '0': handleAction('gift'); break;
+                case 'e': announceFullStatus(); break;
+            }
+        });
+
+        // Inicializar soporte instalable y cargar partida guardada al abrir
+        window.addEventListener('DOMContentLoaded', () => {
+            setupPWA();
+            loadGame();
+            const voiceBtn = document.getElementById('toggle-voice-btn');
+            if (voiceBtn && gameState.screenReaderFriendly) {
+                voiceBtn.textContent = "♿ Modo Lector: Activo";
+            }
+        });
+    </script>
+</body>
+</html>
